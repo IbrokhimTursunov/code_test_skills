@@ -24,5 +24,6 @@ urlpatterns = [
     path('execute_python_code', views.ExecutePythonCode.as_view()),
     path('test_results', views.GetPythonTestResults.as_view()),
     path('update_test_result', views.UpdatePythonTestResults.as_view()),
+    path('add_test_result', views.AddPythonTestResults.as_view()),
     path('proceed_test', views.CheckUserCodeAndProvideResult.as_view())
 ]
