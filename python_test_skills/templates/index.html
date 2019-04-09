@@ -70,12 +70,12 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script>
         $("#execute_button").click(function() {
-            let url = window.location.pathname + '/execute_python_code';
+            let url = window.location.pathname + 'execute_python_code';
             let code = $('#code_field').val()
-            // let code_value = encodeURIComponent(code);
             let result_field = $('#result_field');
             $.get(url, {code: code}, function(data){
-                result_field.html(data['result of code execution']);
+                result_field.html(data['stdout']);
+                result_field.append(data['flake8']);
             });
             })
     </script>

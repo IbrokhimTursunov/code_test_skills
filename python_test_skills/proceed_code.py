@@ -1,7 +1,6 @@
 """The module to proceed Python code"""
 import sys
 import io
-import multiprocessing
 
 
 def execute_in_process(code, queue):
@@ -22,27 +21,16 @@ def execute_code(code):
     :param code: a string values containts python code in str format.
     :return: results of executions from terminal in str format.
     """
-    # try:
-    #     multiprocessing.set_start_method("spawn")
-    # except RuntimeError:
-    #     pass
-    # queue = multiprocessing.Queue()
-    # process = multiprocessing.Process(target=execute_in_process, args=(code, queue))
-    # process.start()
-    # result = queue.get()
-    # process.join()
-    # return result
     std_out, std_err = io.StringIO(), io.StringIO()
     sys.stdout, sys.stderr = std_out, std_err
     try:
         exec(code)
     except Exception as err:
         sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
-        return str(err)
-        # return std_err.getvalue()
+        executed_code = str(err)
     else:
         sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
-        return std_out.getvalue()
-
+        executed_code = std_out.getvalue()
+    return executed_code
 
 

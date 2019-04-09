@@ -5,9 +5,10 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from pprint import pprint
 
-from python_test_skills import proceed_code
-from python_test_skills.serializers import PythonTaskSerializer, PythonTaskSuperSerializer, PythonTestResultsSerializer
-from python_test_skills.models import PythonTasks, PythonTestResults
+from .proceed_code import execute_code
+from .linters import linter_stream
+from .serializers import PythonTaskSerializer, PythonTaskSuperSerializer, PythonTestResultsSerializer
+from .models import PythonTasks, PythonTestResults
 
 
 def index(request):
@@ -90,8 +91,9 @@ class ExecutePythonCode(APIView):
     """
     def get(self, request):
         code = request.GET.get('code', '')
-        result_of_code_execution = proceed_code.execute_code(code)
-        return Response({'result of code execution': result_of_code_execution})
+        result_stdout = execute_code(code).replace('\n','<br />')
+        result_flake8 = linter_stream(code).replace('\n','<br />')
+        return Response({'stdout': result_stdout, 'flake8': result_flake8})
 
 
 class CheckUserCodeAndProvideResult(APIView):
