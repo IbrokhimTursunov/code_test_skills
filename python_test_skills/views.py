@@ -1,14 +1,22 @@
 from django.shortcuts import render, get_object_or_404
+from django.core.handlers.wsgi import WSGIRequest
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework import generics
+from rest_framework.parsers import JSONParser
+
+from urllib.parse import urlparse, urlunparse, urljoin
+import requests
+import io
 from pprint import pprint
 
 from .proceed_code import execute_code
 from .linters import linter_stream
-from .serializers import PythonTaskSerializer, PythonTaskSuperSerializer, PythonTestResultsSerializer
+from .serializers import PythonTaskSerializer, PythonTaskSuperSerializer, PythonTestResultsSerializer, ExecutedPythonCodeSerializer
 from .models import PythonTasks, PythonTestResults
+from .python_code_test_framework import PythonTestsAPI
 
 
 def index(request):
@@ -38,10 +46,22 @@ class GetPythonTask(generics.RetrieveAPIView):
 
 class GetPythonTasksWithAnswers(generics.ListAPIView):
     """
-    json value of all tasks
+    json value of all tasks with answers
     """
     queryset = PythonTasks.objects.all()
     serializer_class = PythonTaskSuperSerializer
+
+class GetPythonTaskWithAnswer(generics.RetrieveAPIView):
+    """
+    json value of task with answer
+    """
+    serializer_class = PythonTaskSuperSerializer
+
+    def get_object(self):
+        test_id = self.request.query_params.get('test_id')
+        queryset = PythonTasks.objects.all()
+        obj = get_object_or_404(queryset, pk=test_id)
+        return obj
 
 
 class GetPythonTestResults(generics.RetrieveAPIView):
@@ -90,9 +110,9 @@ class ExecutePythonCode(APIView):
     Executes code from frontend and return json value with result of implementation.
     """
     def get(self, request):
-        code = request.GET.get('code', '')
-        result_stdout = execute_code(code).replace('\n','<br />')
-        result_flake8 = linter_stream(code).replace('\n','<br />')
+        code = request.GET.get('user_code', '')
+        result_stdout = execute_code(code)
+        result_flake8 = linter_stream(code)
         return Response({'stdout': result_stdout, 'flake8': result_flake8})
 
 
@@ -101,17 +121,27 @@ class CheckUserCodeAndProvideResult(APIView):
     Executes provided code, returns console log and result, if the test passed or not.
     """
     def get(self, request):
-        request_val = request._request
-        previous_result = GetPythonTestResults.as_view()(request_val)
-        error_message = previous_result.data.get('detail', None)
-        if not error_message:
-            val = 'PUT'
-            request_val.method = 'PUT'
-            UpdatePythonTestResults.as_view()(request_val)
+        test_api = PythonTestsAPI(request)
+        previous_result = test_api.test_results(PythonTestResultsSerializer)
+        response = dict()
+        if previous_result.get('user_result'):
+            response.update({'test_result': "The task has been completed successfully."})
+            return Response(response)
+        task = test_api.get_task_with_answer(PythonTaskSuperSerializer)
+        right_code = task.get('right_code')
+        executed_right_code = test_api.execute_python_code(ExecutedPythonCodeSerializer, code=right_code)
+        executed_user_code = test_api.execute_python_code(ExecutedPythonCodeSerializer)
+        test_result = (executed_right_code == executed_user_code)
+        pprint(executed_user_code)
+        if previous_result:
+            test_api.update_test_result(user_result=test_result)
         else:
-            val = 'POST'
-            request_val.method = 'POST'
-            AddPythonTestResults.as_view()(request_val)
-        return Response(val)
+            test_api.add_new_test_result(user_result=test_result)
+        response.update(executed_user_code)
+        if test_result:
+            response.update({'test_result': 'The test has been passed successfully!'})
+        else:
+            response.update({'test_result': 'Please try again.'})
+        return Response(response)
 
 

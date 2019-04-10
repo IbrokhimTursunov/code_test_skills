@@ -21,6 +21,7 @@ urlpatterns = [
     path('', views.index),
     path('tasks', views.GetPythonTasks.as_view()),
     path('task', views.GetPythonTask.as_view()),
+    path('task_with_answer', views.GetPythonTaskWithAnswer.as_view()),
     path('execute_python_code', views.ExecutePythonCode.as_view()),
     path('test_results', views.GetPythonTestResults.as_view()),
     path('update_test_result', views.UpdatePythonTestResults.as_view()),

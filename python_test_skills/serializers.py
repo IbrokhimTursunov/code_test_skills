@@ -21,6 +21,12 @@ class PythonTestResultsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ExecutedPythonCodeSerializer(serializers.Serializer):
+    flake8 = serializers.CharField()
+    stdout = serializers.CharField()
+
+
+
 
 
 

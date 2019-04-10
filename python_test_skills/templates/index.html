@@ -73,7 +73,7 @@
             let url = window.location.pathname + 'execute_python_code';
             let code = $('#code_field').val()
             let result_field = $('#result_field');
-            $.get(url, {code: code}, function(data){
+            $.get(url, {user_code: code}, function(data){
                 result_field.html(data['stdout']);
                 result_field.append(data['flake8']);
             });
